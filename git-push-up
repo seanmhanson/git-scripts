@@ -1,0 +1,36 @@
+#!/bin/sh
+
+while getopts ":hfl" opt; do
+  case ${opt} in
+    h ) echo "Usage: git push-up [-h] [-f] [-l]"
+        echo "[-f] push using --force"
+        echo "[-h] display help and usage (you are here)"
+        echo "[-l] push using --force-with-lease"
+        exit 0
+      ;;
+    f ) force=true
+      ;;
+    l ) lease=true
+      ;;
+    \? ) echo "Usage: git push-up [-h] [-f] [-l]"
+        exit 0
+      ;;
+  esac
+done
+
+if currentBranch=$(git symbolic-ref --short -q HEAD)
+then
+  if [ "$force" = true ]; then
+  echo Force pushing local branch to origin/"$currentBranch"
+    git push origin "$currentBranch" --force
+  elif [ "$lease" = true ]; then
+  echo Pushing local branch to origin/"$currentBranch" with lease
+    git push origin "$currentBranch" --force-with-lease
+  else 
+  echo Pushing local branch to origin/"$currentBranch"
+    git push origin "$currentBranch"
+  fi
+else
+  echo "Error: the current branch could not be found"
+  exit 1
+fi

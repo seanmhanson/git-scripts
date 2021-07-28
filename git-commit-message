@@ -1,0 +1,47 @@
+#!/bin/sh
+
+while getopts ":Ahlp" opt; do
+  case ${opt} in
+    h ) echo "Usage: git commit-message [-A] [-h] [-l] [-p] <message>"
+        echo "[-A] stage all changed files before committing"
+        echo "[-h] display help and usage (you are here)"
+        echo "[-l] push using force-with-lease after committing"
+        echo "[-p] push after committing"
+        exit 0
+      ;;
+    A ) stageAll=true
+      ;;
+    l ) forceWithLease=true
+      ;;
+    p ) push=true
+      ;;
+    \? ) echo "Usage: git commit-message [-a] [-h] [-l] [-p] <message>"
+        exit 0
+      ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+if currentBranch=$(git symbolic-ref --short -q HEAD)
+then
+  echo On branch "$currentBranch"
+
+  if [ "$stageAll" = true ]; then
+    git add -A
+    printf "Staged all changed files \n";
+  fi
+
+  git commit -m  "${currentBranch}: ${1}"
+
+  if [ "$forceWithLease" = true ]; then
+    git push origin "$currentBranch" --force-with-lease
+    echo "Force pushed with lease to remote branch"
+  elif [ "$push" = true ]; then
+    git push origin "$currentBranch"
+    echo "Pushed to remote branch"
+  fi
+else
+  echo "ERROR: Cannot find the current branch!"
+  exit 1
+fi

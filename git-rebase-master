@@ -1,0 +1,57 @@
+#!/bin/sh
+
+while getopts ":hips" opt; do
+  case ${opt} in
+    h ) echo "Usage: git rebase-master [-h] [-i] [-p] [-s]"
+        echo "[-h] display help and usage (you are here)"
+        echo "[-i] use an interactive rebase with master"
+        echo "[-p] push using force-with-lease after rebasing"
+        echo "[-s] stash changes before and pop after"
+        exit 0
+      ;;
+    i ) interactive=true
+      ;;
+    p ) push=true
+      ;;
+    s ) stash=true
+      ;;
+    \? ) echo "Usage: git rebase-master [-h] [-i] [-p] [-s]"
+        exit 0
+      ;;
+  esac
+done
+
+if currentBranch=$(git symbolic-ref --short -q HEAD)
+then
+  echo On branch "$currentBranch"
+
+  if [ "$stash" = true ]; then
+    git stash
+    echo "Local changes stashed"
+  fi
+  
+  echo "Pulling updates from master..."
+  git checkout master
+  git pull origin master
+  git checkout -
+
+  if [ "$interactive" = true ]; then
+    git rebase master -i
+  else
+    git rebase master
+  fi
+  echo "Rebased successfully onto master"
+
+  if [ "$stash" = true ]; then
+    git stash pop
+    echo "Local changes reapplied from stash"
+  fi
+
+  if [ "$push" = true ]; then
+    git push origin "$currentBranch" --force-with-lease
+    echo "Force pushed with lease to remote branch"
+  fi
+else
+  echo "ERROR: Cannot find the current branch!"
+  exit 1
+fi
